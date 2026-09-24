@@ -1,0 +1,31 @@
+name: HashTL CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  ultra-contract:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/ultra.io/3rdparty-devtools:latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: bash scripts/test_ultra.sh
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run build
