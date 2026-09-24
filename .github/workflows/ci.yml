@@ -16,6 +16,14 @@ jobs:
         with:
           node-version: 18
       - run: bash scripts/test_ultra.sh
+      - name: Upload HashTL contract artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hashtl-ultra-contract
+          path: |
+            contract/build/hashedlaunch.wasm
+            contract/build/hashedlaunch.abi
+          if-no-files-found: error
 
   web:
     runs-on: ubuntu-latest
