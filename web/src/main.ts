@@ -97,37 +97,58 @@ function formatAsset(raw: string, decimals: number, symbol: string) {
 
 connectButton.addEventListener('click', async () => {
   if (!('ultra' in window)) {
-    showStatus('Ultra Wallet Extension was not detected.', 'error');
+    showStatus(
+      'Ultra Wallet Extension was not detected. Testnet connections require the Ultra browser extension.',
+      'error',
+    );
     return;
   }
 
   connectButton.disabled = true;
 
   try {
+    showStatus('Checking Ultra Wallet network…');
+
     const chain = await wallet.getChainId();
 
-    if (chain.data !== ULTRA_TESTNET_CHAIN_ID) {
-      if (chain.data === ULTRA_MAINNET_CHAIN_ID) {
-        showStatus('Ultra Wallet is on Mainnet. Trying to switch to Testnet…');
-      }
-
-      try {
-        await wallet.switchNetwork(ULTRA_TESTNET_CHAIN_ID);
-      } catch {
-        throw new Error('Open Ultra Wallet → Networks → Testnet, switch to Testnet, then connect again.');
-      }
+    if (!chain.data) {
+      throw new Error(
+        'Ultra Wallet could not reach its current network. Open the extension, unlock it, select Testnet, then try again.',
+      );
     }
 
+    // switchNetwork() requires the site to already be trusted. Calling it before
+    // the first connect causes error 4100, so first-time users switch manually.
+    if (chain.data !== ULTRA_TESTNET_CHAIN_ID) {
+      if (chain.data === ULTRA_MAINNET_CHAIN_ID) {
+        throw new Error(
+          'Ultra Wallet is on Mainnet. Open Ultra Wallet → Networks → Testnet, switch to Testnet, then click Connect again.',
+        );
+      }
+
+      throw new Error(
+        'Ultra Wallet is not on Ultra Testnet. Switch the extension to Testnet, then click Connect again.',
+      );
+    }
+
+    showStatus('Opening Ultra Wallet…');
     const { data } = await wallet.connect();
     account = data.blockchainid;
-    if (!account) throw new Error('Ultra Testnet account was not returned by the wallet.');
+
+    if (!account) {
+      throw new Error(
+        'Wallet connected, but no Ultra Testnet account is available. Import the private key for your Testnet developer account into Ultra Wallet and select its @active account.',
+      );
+    }
 
     connectButton.textContent = account;
     issuer.textContent = account;
     launchButton.disabled = false;
     launchButton.textContent = 'Create token';
-    showStatus('Wallet connected to Ultra Testnet.', 'ok');
+    showStatus(`Connected to Ultra Testnet as ${account}.`, 'ok');
   } catch (err: unknown) {
+    account = undefined;
+    launchButton.disabled = true;
     showStatus(errorMessage(err), 'error');
   } finally {
     connectButton.disabled = false;
